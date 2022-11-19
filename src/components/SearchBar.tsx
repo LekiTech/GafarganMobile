@@ -1,5 +1,6 @@
 /* eslint-disable react-native/no-inline-styles */
 import React, { memo, useCallback, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Dimensions, Text, Platform } from 'react-native';
 import {
   AutocompleteDropdown,
@@ -9,31 +10,37 @@ import {
 
 type Props = {
   onSelectItem: ((item: TAutocompleteDropdownItem) => void) | undefined;
+  fromLang: string;
+  toLang: string;
 };
 
 export const SearchBar = memo((props: Props) => {
-  const { onSelectItem } = props;
+  const { onSelectItem, fromLang, toLang } = props;
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [suggestionsList, setSuggestionsList] = useState(undefined);
   const dropdownController = useRef(null as unknown as AutocompleteDropdownRef);
 
   const searchRef = useRef(null);
 
-  const getSuggestions = useCallback(async (q: string) => {
-    const filterToken = q.toLowerCase();
-    console.log('getSuggestions', q);
-    if (typeof q !== 'string') {
-      setSuggestionsList(undefined);
-      return;
-    }
-    setLoading(true);
-    const response = await fetch(
-      `https://api.gafalag.com/expression/search/suggestions?exp=${filterToken}&fromLang=lez&toLang=rus`,
-    );
-    const suggestions = await response.json();
-    setSuggestionsList(suggestions.map((word, i) => ({ id: i, title: word })));
-    setLoading(false);
-  }, []);
+  const getSuggestions = useCallback(
+    async (q: string) => {
+      const filterToken = q.toLowerCase();
+      console.log('getSuggestions', q);
+      if (typeof q !== 'string') {
+        setSuggestionsList(undefined);
+        return;
+      }
+      setLoading(true);
+      const response = await fetch(
+        `https://api.gafalag.com/expression/search/suggestions?exp=${filterToken}&fromLang=${fromLang}&toLang=${toLang}`,
+      );
+      const suggestions = await response.json();
+      setSuggestionsList(suggestions.map((word: string, i: number) => ({ id: i, title: word })));
+      setLoading(false);
+    },
+    [fromLang, toLang],
+  );
 
   const onClearPress = useCallback(() => {
     setSuggestionsList(undefined);
@@ -52,6 +59,12 @@ export const SearchBar = memo((props: Props) => {
       dataSet={suggestionsList}
       onChangeText={getSuggestions}
       onSelectItem={onSelectItem}
+      onSubmit={(e) => {
+        const item = { id: '-1', title: e.nativeEvent.text };
+        onSelectItem && onSelectItem(item);
+        dropdownController.current?.setItem(item);
+        dropdownController.current?.close();
+      }}
       //   async (item) => {
       //   if (item) {
       //     setSelectedItem(item.title);
@@ -69,7 +82,7 @@ export const SearchBar = memo((props: Props) => {
       loading={loading}
       useFilter={false} // set false to prevent rerender twice
       textInputProps={{
-        placeholder: 'Жагъурун ...',
+        placeholder: t('enterSearchWord') ?? '',
         autoCorrect: false,
         autoCapitalize: 'none',
         style: {
@@ -94,6 +107,7 @@ export const SearchBar = memo((props: Props) => {
       inputHeight={50}
       showChevron={false}
       closeOnBlur={false}
+      clearOnFocus={false}
     />
   );
 });

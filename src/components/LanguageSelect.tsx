@@ -1,5 +1,6 @@
 /* eslint-disable react-native/no-inline-styles */
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Text, View } from 'react-native';
 import {
   RadioButton,
@@ -15,30 +16,30 @@ type Language = {
 
 type Props = {
   languages: Language[];
-  onSelectLanguage: (langCode: string) => void;
-  defaultLangCode: string;
+  onSelectLanguage: (lang: Language) => void;
+  defaultLangCode: Language;
 };
-// [
-//               { name: 'Lezgi', value: 'lez' },
-//               { name: 'Russian', value: 'rus' },
-//               { name: 'Tabasaran', value: 'tab' },
-//             ]
+
 export const LanguageSelect = (props: Props) => {
   const { languages, onSelectLanguage, defaultLangCode } = props;
-  const [visible, setVisible] = React.useState(false);
+  const { t } = useTranslation();
+  const [visible, setVisible] = useState(false);
   const showDialog = () => setVisible(true);
   const hideDialog = () => setVisible(false);
-  const [checked, setChecked] = React.useState(defaultLangCode);
-  const selectLanguage = (langCode: string) => {
-    setChecked(langCode);
-    onSelectLanguage(langCode);
+  const [checked, setChecked] = useState(defaultLangCode);
+  useEffect(() => {
+    setChecked(defaultLangCode);
+  }, [defaultLangCode])
+  const selectLanguage = (lang: Language) => {
+    setChecked(lang);
+    onSelectLanguage(lang);
   };
   return (
     <>
-      <Button onPress={showDialog}>{checked}</Button>
+      <Button onPress={showDialog}>{checked.name}</Button>
       <Portal>
         <Dialog visible={visible} onDismiss={hideDialog}>
-          <Dialog.Title>Alert</Dialog.Title>
+          <Dialog.Title>{t('language')}</Dialog.Title>
           <Dialog.Content>
             {languages.map((langObj) => (
               <View
@@ -51,15 +52,15 @@ export const LanguageSelect = (props: Props) => {
               >
                 <RadioButton
                   value={langObj.code}
-                  status={checked === langObj.code ? 'checked' : 'unchecked'}
-                  onPress={() => selectLanguage(langObj.code)}
+                  status={checked.code === langObj.code ? 'checked' : 'unchecked'}
+                  onPress={() => selectLanguage(langObj)}
                 />
                 <Text style={{ fontSize: 18 }}>{langObj.name}</Text>
               </View>
             ))}
           </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={hideDialog}>Done</Button>
+            <Button onPress={hideDialog}>Ok</Button>
           </Dialog.Actions>
         </Dialog>
       </Portal>
